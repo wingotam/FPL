@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Poker league - FPL</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .table-container {
+            display: flex;
+        }
+        .table-container table {
+            width: 100%;
+            max-width: 800px;
+            border-collapse: collapse;
+        }
+        .table-container th,
+        .table-container td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .table-container th {
+            background-color: #f2f2f2;
+        }
+        .highlighted {
+            background-color: #ffff99;
+        }
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            width: 150%;
+            max-width: 2000px;
+            height: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Poker league - FPL</h1>
+
+    <div class="table-container">
+        <table id="score_table">
+            <thead>
+                <tr>
+                    <th>Entry</th>
+                    <th>Entry Name</th>
+                    {% for i in range(data[0]['score']|length) %}
+                    <th>Week {{ i+1 }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                <tr>
+                    <td>{{ item['entry'] }}</td>
+                    <td>{{ item['entry_name'] }}</td>
+                    {% for score in item['score'] %}
+                    <td>{{ score }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-container">
+    <canvas id="accumulatedChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+    <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('score_table');
+            const rows = table.rows;
+            const maxValues = [];
+
+            for (let i = 2; i < rows[0].cells.length; i++) {
+                let maxVal = Number.MIN_SAFE_INTEGER;
+
+                for (let j = 1; j < rows.length; j++) {
+                    let cellValue = parseInt(rows[j].cells[i].innerHTML);
+
+                    if (cellValue > maxVal) {
+                        maxVal = cellValue;
+                    }
+                }
+
+                maxValues.push(maxVal);
+            }
+
+            for (let i = 2; i < rows[0].cells.length; i++) {
+                for (let j = 1; j < rows.length; j++) {
+                    let cellValue = parseInt(rows[j].cells[i].innerHTML);
+
+                    if (cellValue === maxValues[i - 2]) {
+                        rows[j].cells[i].classList.add('highlighted');
+                    }
+                }
+            }
+
+            const accumulatedScores = [];
+            for (let j = 1; j < rows.length; j++) {
+                const entryScores = [];
+                let accumulatedScore = 0;
+
+                for (let i = 2; i < rows[0].cells.length; i++) {
+                    let cellValue = parseInt(rows[j].cells[i].innerHTML);
+                    accumulatedScore += cellValue;
+                    entryScores.push(accumulatedScore);
+                }
+
+                accumulatedScores.push(entryScores);
+            }
+
+            const ctx = document.getElementById('accumulatedChart').getContext('2d');
+            const accumulatedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [{% for i in range(data[0]['score']|length) %}{{ i+1 }},{% endfor %}],
+                    datasets: [
+                        {% for item in data %}
+                        {
+                            label: '{{ item["entry_name"] }}',
+                            data: accumulatedScores[{{ loop.index0 }}],
+                            borderColor: 'rgb({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }})',
+                            backgroundColor: 'rgba({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }}, 0.2)',
+                            pointHoverBackgroundColor: 'rgba({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }}, 0.8)',
+                            pointHoverBorderColor: 'rgba({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }}, 0.8)',
+                            pointHoverRadius: 8,
+                            hidden: false
+                        },
+                        {% endfor %}
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    title: {
+                        display: true,
+                        text: 'Accumulated Score',
+                        fontSize: 18,
+                        fontFamily: 'Arial',
+                        fontStyle: 'bold'
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(tooltipItem, data) {
+                                var label = data.datasets[tooltipItem.datasetIndex].label || '';
+                                var value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                                return label + ': ' + value;
+                            }
+                        }
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Week'
+                            }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Accumulated Score'
+                            }
+                        }]
+                    }
+                }
+            });
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('score_table');
+            const rows = table.rows;
+            const maxValues = [];
+
+            for (let i = 2; i < rows[0].cells.length; i++) {
+                let maxVal = Number.MIN_SAFE_INTEGER;
+
+                for (let j = 1; j < rows.length; j++) {
+                    let cellValue = parseInt(rows[j].cells[i].innerHTML);
+
+                    if (cellValue > maxVal) {
+                        maxVal = cellValue;
+                    }
+                }
+
+                maxValues.push(maxVal);
+            }
+
+            for (let i = 2; i < rows[0].cells.length; i++) {
+                for (let j = 1; j < rows.length; j++) {
+                    let cellValue = parseInt(rows[j].cells[i].innerHTML);
+
+                    if (cellValue === maxValues[i - 2]) {
+                        rows[j].cells[i].classList.add('highlighted');
+                    }
+                }
+            }
+        });
+
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [{% for i in range(data[0]['score']|length) %}{{ i+1 }},{% endfor %}],
+                datasets: [
+                    {% for item in data %}
+                    {
+                        label: '{{ item["entry_name"] }}',
+                        data: [{% for score in item['score'] %}{{ score }},{% endfor %}],
+                        borderColor: 'rgb({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }})',
+                        backgroundColor: 'rgba({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }}, 0.2)',
+                        pointHoverBackgroundColor: 'rgba({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }}, 0.8)',
+                        pointHoverBorderColor: 'rgba({{ range(0,256)|random }}, {{ range(0,256)|random }}, {{ range(0,256)|random }}, 0.8)',
+                        pointHoverRadius: 8,
+                        hidden: false
+                    },
+                    {% endfor %}
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                title: {
+                    display: true,
+                    text: 'Weekly Score',
+                    fontSize: 18,
+                    fontFamily: 'Arial',
+                    fontStyle: 'bold'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            var label = data.datasets[tooltipItem.datasetIndex].label || '';
+                            var value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                            return label + ': ' + value;
+                        }
+                    }
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Week'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Score'
+                        }
+                    }]
+                }
+            }
+        });
+    </script>
+</body>
+</html>
